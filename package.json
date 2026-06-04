@@ -1,0 +1,25 @@
+{
+  "name": "dblibrary",
+  "version": "1.0.0",
+  "description": "This is my practical implementation of Database Normalisation specifically 5NF, from my session with Colin through FCDC. I'll be using Express with nodejs for my backend, and SQLite For the library database.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lupamo/DBlibrary.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/lupamo/DBlibrary/issues"
+  },
+  "homepage": "https://github.com/lupamo/DBlibrary#readme",
+  "dependencies": {
+    "sqlite3": "^6.0.1"
+  }
+}
