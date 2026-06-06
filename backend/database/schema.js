@@ -15,8 +15,7 @@ const migrate =() => {
 
 		CREATE TABLE IF NOT EXISTS books (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			title TEXT NOT NULL,
-			genre_id INTEGER REFERENCES genres(id) NOT NULL
+			title TEXT NOT NULL
 		);
 
 		CREATE TABLE IF NOT EXISTS book_edition (
@@ -50,16 +49,21 @@ const migrate =() => {
 		CREATE TABLE IF NOT EXISTS checkout_entries (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		borrower_id INTEGER NOT NULL REFERENCES user(id),
-		librarian_id INTEGER NOT NULL REFERENCES user(id)
+		librarian_id INTEGER NOT NULL REFERENCES user(id),
 		checked_out_at TEXT NOT NULL DEFAULT (datetime('now')),
 		returned_at TEXT
 		);
 
 		CREATE TABLE IF NOT EXISTS checkout (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		checkout_id INTEGER NOT NULL REFERENCES checkout_entries(id),
-		physical_book_id INTEGER NOT NULL REFERENCES physical_book(id)
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			checkout_id INTEGER NOT NULL REFERENCES checkout_entries(id),
+			physical_book_id INTEGER NOT NULL REFERENCES physical_book(id)
 		);
+		CREATE TABLE IF NOT EXISTS book_genre (
+			book_id INTEGER NOT NULL REFERENCES books(id),
+			genre_id INTEGER NOT NULL REFERENCES genres(id),
+			PRIMARY KEY (book_id, genre_id)
+		)
 	`);
 }
 
