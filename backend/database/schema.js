@@ -1,4 +1,4 @@
-import db from './db';
+import db from './db.js';
 const migrate =() => {
 	db.exec(`
 		PRAGMA foreign_keys = ON;
