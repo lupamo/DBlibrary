@@ -12,7 +12,7 @@ const getAllBooks = () => {
 		LEFT JOIN author_book ab ON b.id = ab.book_id
 		LEFT JOIN authors a on ab.author_id = a.id
 		LEFT JOIN book_genre bg ON b.id = bg.book_id
-		LEFT JOIN genres g ON bg.genres_id = g.id
+		LEFT JOIN genres g ON bg.genre_id = g.id
 		GROUP BY b.id
 		`
 	).all()
@@ -25,7 +25,20 @@ const addBook = (title) => {
 }
 
 const getBookById = (id) => {
-	return db.prepare('SELECT * FROM books where id = ?').get(id);
+	return db.prepare(`
+        SELECT
+            b.id,
+            b.title,
+            GROUP_CONCAT(DISTINCT a.name) as authors,
+            GROUP_CONCAT(DISTINCT g.name) as genres
+        FROM books b
+        LEFT JOIN author_book ab ON b.id = ab.book_id
+        LEFT JOIN authors a ON ab.author_id = a.id
+        LEFT JOIN book_genre bg ON b.id = bg.book_id
+        LEFT JOIN genres g ON bg.genre_id = g.id
+        WHERE b.id = ?
+        GROUP BY b.id
+    `).get(id)
 }
 
 const getBookByTitle = (title) => {
