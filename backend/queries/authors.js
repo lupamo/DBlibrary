@@ -53,18 +53,11 @@ const getAuthorWithBooks = (authorId) => {
 	`).get(authorId);
 }
 
-const deleteAuthor = (id) => {
-	return db.prepare(
-		`DELETE FROM authors WHERE id = ? RETURNING *`
-	).get(id)
-}
-
 export {
 	getAllAuthors, 
 	addAuthor, 
 	getAuthorById, 
 	getAuthorByName, 
 	updateAuthor, 
-	getAuthorWithBooks,
-	deleteAuthor
+	getAuthorWithBooks
 }

@@ -18,11 +18,82 @@ const getAllBooks = () => {
 	).all()
 }
 
-const addBook = (title) => {
-	return db.prepare(
-		`INSERT INTO books (title) VALUES (?) RETURNING *`
+const addCompleteBook = db.transaction((bookData) => {
+	const { title, authors, genres, editions } = bookData;
+
+	const getAuthor = db.prepare(`SELECT id FROM authors WHERE name = ?`);
+	const addAuthor = db.prepare(`INSERT INTO authors (name) VALUES (?) RETURNING id`);
+
+	const authorIds = [];
+	for (const name of authors) {
+		const existing = getAuthor.get(name);
+		if (existing) {
+			authorIds.push(existing.id);
+		} else {
+			const newlyCreated = addAuthor.get(name);
+			authorIds.push(newlyCreated.id);
+		}
+	}
+
+	const getGenre = db.prepare(`SELECT id FROM genres WHERE name = ?`);
+	const addGenre = db.prepare(`INSERT INTO genres (name) VALUES (?) RETURNING id`);
+
+	const genreIds = [];
+	for (const name of genres) {
+		const existing = getGenre.get(name);
+		if (existing) {
+			genreIds.push(existing.id);
+		} else {
+			const newlyCreated = addGenre.get(name);
+			genreIds.push(newlyCreated.id);
+		}
+	}
+
+	const bookResult = db.prepare(
+		`INSERT INTO books (title) values (?) RETURNING id`
 	).get(title)
-}
+	const bookId = bookResult.id;
+
+	const linkAuthor = db.prepare(`INSERT INTO author_book (author_id, book_id) VALUES (?, ?)`);
+	for (const authorId of authorIds) {
+		linkAuthor.run(authorId, bookId);
+	}
+
+	const linkGenre = db.prepare(
+		`INSERT INTO book_genre (book_id, genre_id) VALUES (?, ?)`
+	);
+	for (const genreId of genreIds) {
+		linkGenre.run(bookId, genreId);
+	}
+
+	const insertEdition = db.prepare(
+		`INSERT INTO book_editions (book_id, published_year) VALUES (?, ?) RETURNING id`
+	);
+	const insertPhysicalBook = db.prepare(
+		`INSERT INTO physical_books (book_edition_id, condition, barcode) VALUES (?, ?, ?)`
+	);
+	
+	let totalCopiesAdded = 0;
+
+	for (const edition of editions) {
+		const editionResult = insertEdition.get(bookId, edition.published_year);
+		const editionId = editionResult.id;
+
+		for (const { barcode, condition} of edition.copies){
+			insertPhysicalBook.run(editionId, condition, barcode);
+			totalCopiesAdded++;
+		}
+	}
+	return {
+		success: true,
+		bookId,
+		authorsLinked: authorIds.length,
+		genresLinked: genreIds.length,
+		copiesAdded: totalCopiesAdded
+	};
+
+})
+
 
 const getBookById = (id) => {
 	return db.prepare(`
@@ -57,9 +128,8 @@ const getBookEditions = (bookId) => {
 		`).all(bookId)
 }
 
-
 export {
-	addBook,
+	addCompleteBook,
 	getAllBooks,
 	getBookById,
 	getBookByTitle,
