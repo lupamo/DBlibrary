@@ -10,7 +10,7 @@ const migrate =() => {
 		
 		CREATE TABLE IF NOT EXISTS genres (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			name TEXT NOT NULL
+			name TEXT NOT NULL UNIQUE
 		);
 
 		CREATE TABLE IF NOT EXISTS books (
@@ -27,17 +27,17 @@ const migrate =() => {
 		CREATE TABLE IF NOT EXISTS physical_books (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			book_edition_id INTEGER NOT NULL REFERENCES book_editions(id),
-			condition TEXT,
+			condition TEXT CHECK (condition IN('New', 'Good', 'Fair', 'Poor')),
 			barcode TEXT UNIQUE NOT NULL
 		);
 
 		CREATE TABLE IF NOT EXISTS users (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			role TEXT DEFAULT 'user' NOT NULL CHECK (role IN ('user', 'librarian')),
 			name TEXT NOT NULL,
 			phone TEXT NOT NULL,
 			username TEXT NOT NULL UNIQUE,
-			password TEXT NOT NULL
+			password TEXT NOT NULL,
+			role TEXT DEFAULT 'user' NOT NULL CHECK (role IN ('user', 'librarian')),
 		);
 
 		CREATE TABLE IF NOT EXISTS author_book (

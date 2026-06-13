@@ -7,12 +7,18 @@ const getAllBooks = () => {
 			b.id,
 			b.title,
 			GROUP_CONCAT(DISTINCT a.name) as authors,
-			GROUP_CONCAT(DISTINCT g.name) as genres
+			GROUP_CONCAT(DISTINCT g.name) as genres,
+			COUNT(DISTINCT pb.id) as total_copies,
+			COUNT(DISTINCT CASE WHEN c.returned_at is NULL AND c.id is NOT NULL THEN pb.id END) as checked_out_copies
 		FROM books b
 		LEFT JOIN author_book ab ON b.id = ab.book_id
 		LEFT JOIN authors a on ab.author_id = a.id
 		LEFT JOIN book_genre bg ON b.id = bg.book_id
 		LEFT JOIN genres g ON bg.genre_id = g.id
+		LEFT JOIN book_editions be ON b.id = be.book_id
+		LEFT JOIN physical_books pb ON be.id = pb.book_edition_id
+		LEFT JOIN checkout_entries ce ON pb.id = ce.physical_book_id
+		LEFT JOIN checkouts c ON ce.checkout_id = c.id
 		GROUP BY b.id
 		`
 	).all()

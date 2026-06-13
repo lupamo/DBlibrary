@@ -39,4 +39,14 @@ router.post('/', (req, res) => {
 	}
 })
 
+router.get('/physical-books/:id/borrower', (req, res) => {
+	const physicalBookId = req.params.id;
+	const borrowerInfo = borrowedBook(physicalBookId);
+	if (borrowerInfo) {
+		res.json(borrowerInfo);
+	} else {
+		res.status(404).json({ error: 'Physical book not found or not currently borrowed' });
+	}
+})
+
 export default router;
