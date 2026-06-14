@@ -37,7 +37,7 @@ const migrate =() => {
 			phone TEXT NOT NULL,
 			username TEXT NOT NULL UNIQUE,
 			password TEXT NOT NULL,
-			role TEXT DEFAULT 'user' NOT NULL CHECK (role IN ('user', 'librarian')),
+			role TEXT DEFAULT 'user' NOT NULL CHECK (role IN ('user', 'librarian'))
 		);
 
 		CREATE TABLE IF NOT EXISTS author_book (
