@@ -141,7 +141,7 @@ const searchBook = (title) => {
 			b.id,
 			b.title,
 			GROUP_CONCAT(DISTINCT a.name) as authors,
-			GROUP_CONCAT(DISTINCT g.name) as genres,
+			GROUP_CONCAT(DISTINCT g.name) as genres
 		FROM books b
 		LEFT JOIN author_book ab ON b.id = ab.book_id
 		LEFT JOIN authors a ON ab.author_id = a.id
@@ -162,3 +162,4 @@ export {
 	getBookEditions,
 	searchBook
 }
+
