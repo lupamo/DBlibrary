@@ -1,4 +1,4 @@
-const BASE = 'https://localhost:3000/api';
+const BASE = 'http://localhost:3000/api';
 
 async function request(path, options = {}) {
 	const res = await fetch(`${BASE}${path}`, {
@@ -34,6 +34,13 @@ export const api = {
 		method: 'POST',
 		body: JSON.stringify(data),
 	}),
+	searchBooks: (title) => request(`/books/search?title=${encodeURIComponent(title)}`),
+	getBookEditions: (bookId) => request(`/books/${bookId}/editions`),
+	addCopies: (editionId, copies) =>
+		request(`/book-editions/${editionId}/copies`, {
+			method: 'POST',
+			body: JSON.stringify({ copies }),
+		}),
 
 }
 

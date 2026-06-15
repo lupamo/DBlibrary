@@ -134,11 +134,31 @@ const getBookEditions = (bookId) => {
 		`).all(bookId)
 }
 
+const searchBook = (title) => {
+	return db.prepare(
+		`
+		SELECT
+			b.id,
+			b.title,
+			GROUP_CONCAT(DISTINCT a.name) as authors,
+			GROUP_CONCAT(DISTINCT g.name) as genres,
+		FROM books b
+		LEFT JOIN author_book ab ON b.id = ab.book_id
+		LEFT JOIN authors a ON ab.author_id = a.id
+		LEFT JOIN book_genre bg ON b.id = bg.book_id
+		LEFT JOIN genres g ON bg.genre_id = g.id
+		WHERE b.title LIKE ?
+		GROUP BY b.id
+		`
+	).all(`%${title}%`)
+}
+
 export {
 	addCompleteBook,
 	getAllBooks,
 	getBookById,
 	getBookByTitle,
 	updateBook,
-	getBookEditions
+	getBookEditions,
+	searchBook
 }

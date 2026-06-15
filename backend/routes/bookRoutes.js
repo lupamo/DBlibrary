@@ -20,6 +20,15 @@ router.get('/', (req, res) => {
 	res.json(books);
 })
 
+router.get('/search', (req, res) => {
+	const { title } = req.query;
+	if (!title) {
+		return(res.status(400).json({ error: 'title query is required' }))
+	}
+	const books = searchBook(title);
+	res.json(books);
+})
+
 router.get('/:id', (req, res) => {
 	const bookId = req.params.id;
 	const book = getBookById(bookId);
