@@ -3,7 +3,7 @@ This is my practical implementation of Database Normalisation specifically 5NF, 
 I'll be using Express/nodejs for my backend, and better-sqlite3 For the library database.
 
 ## Database
-A practical library database would usually have a couple of tables which include; 
+A practical library database would usually have a couple of tables which include users, books and checkout system. This database had the following [tables](./backend/database/schema.js) ; 
 - Users(Librarian, user), Users table would consist of a couple of columns
    |id|  name  | phone | username | passwords | Role |
    |--|--------|-------|----------|-----------|------|
