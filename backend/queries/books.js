@@ -24,6 +24,79 @@ const getAllBooks = () => {
 	).all()
 }
 
+const getPhysicalCopiesByBook = () => {
+	return db.prepare(`
+		SELECT
+			pb.id,
+			pb.barcode,
+			pb.condition,
+			be.id AS edition_id,
+			be.published_year,
+			be.book_id,
+			EXISTS (
+				SELECT 1
+				FROM checkout_entries ce
+				JOIN checkouts c ON ce.checkout_id = c.id
+				WHERE ce.physical_book_id = pb.id
+				AND c.returned_at IS NULL
+			) AS is_checked_out
+		FROM physical_books pb
+		JOIN book_editions be ON pb.book_edition_id = be.id
+		ORDER BY be.published_year IS NULL, be.published_year, pb.id
+	`).all()
+}
+
+const getEditionsByBook = () => {
+	return db.prepare(`
+		SELECT
+			be.id,
+			be.book_id,
+			be.published_year,
+			COUNT(pb.id) AS copy_count
+		FROM book_editions be
+		LEFT JOIN physical_books pb ON be.id = pb.book_edition_id
+		GROUP BY be.id
+		ORDER BY be.published_year IS NULL, be.published_year
+	`).all()
+}
+
+const getAllBooksWithCopies = () => {
+	const books = getAllBooks();
+	const copiesByBook = {};
+	const editionsByBook = {};
+
+	for (const edition of getEditionsByBook()) {
+		if (!editionsByBook[edition.book_id]) {
+			editionsByBook[edition.book_id] = [];
+		}
+		editionsByBook[edition.book_id].push({
+			id: edition.id,
+			published_year: edition.published_year,
+			copy_count: edition.copy_count,
+		});
+	}
+
+	for (const copy of getPhysicalCopiesByBook()) {
+		if (!copiesByBook[copy.book_id]) {
+			copiesByBook[copy.book_id] = [];
+		}
+		copiesByBook[copy.book_id].push({
+			id: copy.id,
+			barcode: copy.barcode,
+			condition: copy.condition,
+			edition_id: copy.edition_id,
+			published_year: copy.published_year,
+			is_checked_out: !!copy.is_checked_out,
+		});
+	}
+
+	return books.map((book) => ({
+		...book,
+		editions: editionsByBook[book.id] || [],
+		copies: copiesByBook[book.id] || [],
+	}));
+}
+
 const addCompleteBook = db.transaction((bookData) => {
 	const { title, authors, genres, editions } = bookData;
 
@@ -128,10 +201,26 @@ const updateBook = (id, title) => {
 }
 const getBookEditions = (bookId) => {
 	return db.prepare(`
-			SELECT id, published_year
-			FROM book_editions
-			WHERE book_id = ?
+			SELECT
+				be.id,
+				be.published_year,
+				COUNT(pb.id) AS copy_count
+			FROM book_editions be
+			LEFT JOIN physical_books pb ON be.id = pb.book_edition_id
+			WHERE be.book_id = ?
+			GROUP BY be.id
+			ORDER BY be.published_year IS NULL, be.published_year
 		`).all(bookId)
+}
+
+const addEdition = (bookId, publishedYear) => {
+	const book = getBookById(bookId);
+	if (!book) {
+		throw new Error('Book not found');
+	}
+	return db.prepare(
+		`INSERT INTO book_editions (book_id, published_year) VALUES (?, ?) RETURNING id, published_year`
+	).get(bookId, publishedYear ?? null);
 }
 
 const searchBook = (title) => {
@@ -153,13 +242,27 @@ const searchBook = (title) => {
 	).all(`%${title}%`)
 }
 
+const addPhysicalCopies = (editionId, copies) => {
+    const insert = db.prepare(`
+        INSERT INTO physical_books (book_edition_id, barcode, condition)
+        VALUES (?, ?, ?)
+        RETURNING id, barcode, condition
+    `);
+    return copies.map(({ barcode, condition }) =>
+        insert.get(editionId, barcode, condition ?? 'Good')
+    );
+};
+
 export {
 	addCompleteBook,
 	getAllBooks,
+	getAllBooksWithCopies,
 	getBookById,
 	getBookByTitle,
 	updateBook,
 	getBookEditions,
-	searchBook
+	addEdition,
+	searchBook,
+	addPhysicalCopies
 }
 

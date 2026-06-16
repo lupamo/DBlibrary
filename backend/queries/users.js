@@ -61,11 +61,34 @@ const getUserByUsername = (username) => {
 	).get(username)
 }
 
+const searchBorrowers = (query) => {
+	const term = `%${query}%`;
+	return db.prepare(`
+		SELECT id, name, phone, username
+		FROM users
+		WHERE role = 'user'
+		AND (name LIKE ? OR phone LIKE ? OR username LIKE ?)
+		ORDER BY name
+		LIMIT 20
+	`).all(term, term, term);
+}
+
+const getBorrowers = () => {
+	return db.prepare(`
+		SELECT id, name, phone, username
+		FROM users
+		WHERE role = 'user'
+		ORDER BY name
+	`).all();
+}
+
 export {
 	loginUser,
 	createUser,
 	createLibrarian,
 	getUserById,
 	getLibrarianById,
-	getUserByUsername
+	getUserByUsername,
+	searchBorrowers,
+	getBorrowers,
 }

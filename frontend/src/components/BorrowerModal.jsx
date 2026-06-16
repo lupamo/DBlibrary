@@ -31,7 +31,10 @@ export default function BorrowerModal({ physicalBookId, barcode, onClose, onRetu
       <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div style={styles.modalHeader}>
           <div>
-            <p style={styles.modalLabel}>Physical copy</p>
+            <p style={styles.modalLabel}>Check in</p>
+            {borrower?.book_title && (
+              <p style={styles.modalTitle}>{borrower.book_title}</p>
+            )}
             <p style={styles.modalBarcode}>{barcode}</p>
           </div>
           <button style={styles.closeBtn} onClick={onClose}>✕</button>
@@ -63,7 +66,7 @@ export default function BorrowerModal({ physicalBookId, barcode, onClose, onRetu
               onClick={handleReturn}
               disabled={returning}
             >
-              {returning ? 'Processing…' : 'Mark as returned'}
+              {returning ? 'Processing…' : 'Check in book'}
             </button>
           </>
         )}
@@ -104,6 +107,13 @@ const styles = {
     textTransform: 'uppercase',
     letterSpacing: '0.06em',
     margin: 0,
+  },
+  modalTitle: {
+    fontFamily: "'Lora', Georgia, serif",
+    fontSize: 15,
+    fontWeight: 500,
+    color: '#1a1917',
+    margin: '4px 0 2px',
   },
   modalBarcode: {
     fontSize: 15,

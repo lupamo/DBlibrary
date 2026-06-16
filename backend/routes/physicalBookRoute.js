@@ -1,7 +1,15 @@
 import express from 'express';
-import { borrowedBook, checkedIn } from '../queries/physicalBooks.js';
+import { borrowedBook, checkedIn, getPhysicalBookByBarcode } from '../queries/physicalBooks.js';
 
 const router = express.Router();
+
+router.get('/by-barcode/:barcode', (req, res) => {
+	const book = getPhysicalBookByBarcode(req.params.barcode);
+	if (!book) {
+		return res.status(404).json({ error: 'Physical book not found' });
+	}
+	res.json(book);
+});
 
 router.get('/:id/borrower', (req, res) => {
 	const id = parseInt(req.params.id)

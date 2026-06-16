@@ -3,6 +3,8 @@ import LoginPage from './pages/LoginPage';
 import Layout from './components/Layout';
 import BookList from './components/BookList';
 import CreateUserForm from './components/CreateUserForm';
+import AddBookForm from './components/AddBookForm';
+import CheckoutsPage from './pages/CheckoutsPage';
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -19,8 +21,10 @@ export default function App() {
       onNavigate={setPage}
       onLogout={() => setUser(null)}
     >
-      {page === 'books' && <BookList />}
+      {page === 'books' && <BookList librarian={user} />}
+      {page === 'checkouts' && <CheckoutsPage librarian={user} />}
       {page === 'borrowers' && <CreateUserForm />}
+      {page === 'add-book' && <AddBookForm />}
     </Layout>
   );
 }

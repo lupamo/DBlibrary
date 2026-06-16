@@ -4,7 +4,7 @@ import { api } from '../api/client';
 export default function CreateUserForm() {
   const [role, setRole] = useState('borrower');
   const [form, setForm] = useState({ name: '', phone: '', username: '', password: '' });
-  const [status, setStatus] = useState(null); // { type: 'success'|'error', message }
+  const [status, setStatus] = useState(null); 
   const [loading, setLoading] = useState(false);
 
   const set = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }));

@@ -1,7 +1,13 @@
 import express from 'express';
-import { createUser, createLibrarian } from '../queries/users.js';
+import { createUser, createLibrarian, searchBorrowers, getBorrowers } from '../queries/users.js';
 
 const router = express.Router();
+
+router.get('/borrowers', (req, res) => {
+	const { q } = req.query;
+	const borrowers = q?.trim() ? searchBorrowers(q.trim()) : getBorrowers();
+	res.json(borrowers);
+});
 
 router.post('/borrowers', (req, res) => {
     const { name, phone, username, password } = req.body;

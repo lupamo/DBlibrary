@@ -21,6 +21,17 @@ export const api = {
 
 	getBooks: () => request('/books'),
 
+	searchBorrowers: (q) => request(`/users/borrowers${q ? `?q=${encodeURIComponent(q)}` : ''}`),
+
+	getActiveCheckouts: () => request('/checkouts/active'),
+
+	checkoutBooks: (data) => request('/checkouts', {
+		method: 'POST',
+		body: JSON.stringify(data),
+	}),
+
+	lookupBarcode: (barcode) => request(`/physical-books/by-barcode/${encodeURIComponent(barcode)}`),
+
 	getBorrower: (physicalBookId) => request(`/physical-books/${physicalBookId}/borrower`),
 
 	returnBook: (physicalBookId) => request(`/physical-books/return/${physicalBookId}`, {method: 'PATCH'}),
@@ -34,6 +45,16 @@ export const api = {
 		method: 'POST',
 		body: JSON.stringify(data),
 	}),
+
+	addCompleteBook:(data) => request('/books', {
+		method: 'POST',
+		body: JSON.stringify(data),
+	}),
+	addEdition:(bookId, data) => request(`/books/${bookId}/editions`, {
+		method: 'POST',
+		body: JSON.stringify(data),
+	}),
+
 	searchBooks: (title) => request(`/books/search?title=${encodeURIComponent(title)}`),
 	getBookEditions: (bookId) => request(`/books/${bookId}/editions`),
 	addCopies: (editionId, copies) =>

@@ -1,6 +1,8 @@
 export default function Layout({ user, activePage, onNavigate, onLogout, children }) {
   const navItems = [
     { id: 'books', label: 'Books' },
+    { id: 'checkouts', label: 'Checkouts' },
+    { id: 'add-book', label: 'Add Book' },
     { id: 'borrowers', label: 'Borrowers' },
   ];
 

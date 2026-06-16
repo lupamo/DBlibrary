@@ -1,10 +1,10 @@
 import express from 'express';
-import { getAllBooks, getBookById, getBookByTitle, addCompleteBook, searchBook } from '../queries/books.js';
+import { getAllBooksWithCopies, getBookById, addCompleteBook, searchBook, getBookEditions, addEdition } from '../queries/books.js';
 
 const router = express.Router();
 
 router.get('/', (req, res) => {
-	const books = getAllBooks()
+	const books = getAllBooksWithCopies()
 	res.json(books);
 })
 
@@ -15,6 +15,32 @@ router.get('/search', (req, res) => {
 	}
 	const books = searchBook(title);
 	res.json(books);
+})
+
+router.get('/:id/editions', (req, res) => {
+	const id = parseInt(req.params.id);
+	if (isNaN(id)) {
+		return res.status(400).json({ error: 'Invalid book ID' });
+	}
+	const editions = getBookEditions(id);
+	res.json(editions);
+})
+
+router.post('/:id/editions', (req, res) => {
+	const id = parseInt(req.params.id);
+	if (isNaN(id)) {
+		return res.status(400).json({ error: 'Invalid book ID' });
+	}
+	const { published_year } = req.body;
+	try {
+		const edition = addEdition(id, published_year);
+		res.status(201).json(edition);
+	} catch (error) {
+		if (error.message === 'Book not found') {
+			return res.status(404).json({ error: error.message });
+		}
+		res.status(400).json({ error: error.message });
+	}
 })
 
 router.get('/:id', (req, res) => {
@@ -33,16 +59,6 @@ router.post('/', (req, res) => {
 		res.status(201).json(result);
 	} catch (error) {
 		res.status(400).json({ error: error.message });
-	}
-})
-
-router.get('/physical-books/:id/borrower', (req, res) => {
-	const physicalBookId = req.params.id;
-	const borrowerInfo = borrowedBook(physicalBookId);
-	if (borrowerInfo) {
-		res.json(borrowerInfo);
-	} else {
-		res.status(404).json({ error: 'Physical book not found or not currently borrowed' });
 	}
 })
 
