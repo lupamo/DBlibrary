@@ -1,41 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../api/client';
 import BorrowerModal from './BorrowerModal';
-import CheckoutModal from './CheckoutModal';
 
-function formatEdition(year, editionId, editions = []) {
-  const label = year ? `${year} edition` : 'Edition (no year)';
-  const duplicates = editions.filter((e) => e.published_year === year).length > 1;
-  return duplicates ? `${label} #${editionId}` : label;
+function formatEdition(year) {
+  return year ? `${year} edition` : 'Edition (no year)';
 }
 
-function buildEditionGroups(book) {
-  const copies = book.copies || [];
-  const copiesByEdition = new Map();
-
-  for (const copy of copies) {
-    const key = copy.edition_id;
-    if (!copiesByEdition.has(key)) {
-      copiesByEdition.set(key, []);
-    }
-    copiesByEdition.get(key).push(copy);
-  }
-
-  if (book.editions?.length) {
-    return book.editions.map((edition) => ({
-      edition_id: edition.id,
-      published_year: edition.published_year,
-      copies: copiesByEdition.get(edition.id) || [],
-    }));
-  }
-
-  if (!copies.length) {
-    return [];
-  }
-
+function groupCopiesByEdition(copies) {
   const groups = new Map();
   for (const copy of copies) {
-    const key = copy.edition_id ?? 'unknown';
+    const key = copy.edition_id;
     if (!groups.has(key)) {
       groups.set(key, {
         edition_id: copy.edition_id,
@@ -48,14 +22,13 @@ function buildEditionGroups(book) {
   return [...groups.values()];
 }
 
-export default function BookList({ librarian }) {
+export default function BookList() {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState(null);
-  const [returnModal, setReturnModal] = useState(null);
-  const [checkoutModal, setCheckoutModal] = useState(null); 
+  const [modal, setModal] = useState(null); 
 
   const loadBooks = useCallback(async () => {
     setLoading(true);
@@ -105,8 +78,6 @@ export default function BookList({ librarian }) {
         {filtered.map((book) => {
           const available = (book.total_copies || 0) - (book.checked_out_copies || 0);
           const isExpanded = expanded === book.id;
-          const editionGroups = buildEditionGroups(book);
-          const hasInventory = editionGroups.length > 0;
 
           return (
             <div key={book.id} style={styles.bookCard}>
@@ -131,7 +102,7 @@ export default function BookList({ librarian }) {
                     <div style={styles.editionTags}>
                       {book.editions.map((edition) => (
                         <span key={edition.id} style={styles.editionTag}>
-                          {formatEdition(edition.published_year, edition.id, book.editions)}
+                          {formatEdition(edition.published_year)}
                           {edition.copy_count > 0 && ` · ${edition.copy_count}`}
                         </span>
                       ))}
@@ -150,71 +121,59 @@ export default function BookList({ librarian }) {
               </div>
 
               {/* Expanded physical copies */}
-              {isExpanded && hasInventory && (
+              {isExpanded && book.copies && book.copies.length > 0 && (
                 <div style={styles.copiesList}>
-                  {editionGroups.map((group) => (
-                    <div key={group.edition_id} style={styles.editionBlock}>
+                  {groupCopiesByEdition(book.copies).map((group) => (
+                    <div key={group.edition_id}>
                       <div style={styles.editionHeader}>
-                        <span style={styles.editionLabel}>
-                          {formatEdition(group.published_year, group.edition_id, book.editions)}
-                        </span>
+                        <span style={styles.editionLabel}>{formatEdition(group.published_year)}</span>
                         <span style={styles.editionCount}>
-                          {group.copies.length > 0
-                            ? `${group.copies.length} ${group.copies.length === 1 ? 'copy' : 'copies'}`
-                            : 'No copies yet'}
+                          {group.copies.length} {group.copies.length === 1 ? 'copy' : 'copies'}
                         </span>
                       </div>
-
-                      {group.copies.length > 0 && (
-                        <>
-                          <div style={styles.copyTableHead}>
-                            <span>Barcode</span>
-                            <span>Condition</span>
-                            <span>Status</span>
-                          </div>
-                          {group.copies.map((copy) => (
-                            <div
-                              key={copy.id}
-                              style={{
-                                ...styles.copyRow,
-                                cursor: copy.is_checked_out || librarian ? 'pointer' : 'default',
-                              }}
-                              onClick={() => {
-                                if (copy.is_checked_out) {
-                                  setReturnModal({
-                                    physicalBookId: copy.id,
-                                    barcode: copy.barcode,
-                                  });
-                                } else if (librarian) {
-                                  setCheckoutModal({
-                                    id: copy.id,
-                                    barcode: copy.barcode,
-                                    book_title: book.title,
-                                    published_year: group.published_year,
-                                  });
-                                }
-                              }}
-                            >
-                              <span style={styles.barcode}>{copy.barcode}</span>
-                              <span style={styles.condition}>{copy.condition}</span>
-                              <span style={{
-                                ...styles.copyBadge,
-                                ...(copy.is_checked_out ? styles.copyOut : styles.copyIn),
-                              }}>
-                                {copy.is_checked_out ? 'Checked out →' : 'Check out →'}
-                              </span>
-                            </div>
-                          ))}
-                        </>
-                      )}
+                      <div style={styles.copyTableHead}>
+                        <span>Barcode</span>
+                        <span>Condition</span>
+                        <span>Status</span>
+                      </div>
+                      {group.copies.map((copy) => (
+                        <div
+                          key={copy.id}
+                          style={styles.copyRow}
+                          onClick={() => copy.is_checked_out && setModal({
+                            physicalBookId: copy.id,
+                            barcode: copy.barcode,
+                          })}
+                        >
+                          <span style={styles.barcode}>{copy.barcode}</span>
+                          <span style={styles.condition}>{copy.condition}</span>
+                          <span style={{
+                            ...styles.copyBadge,
+                            ...(copy.is_checked_out ? styles.copyOut : styles.copyIn),
+                          }}>
+                            {copy.is_checked_out ? 'Checked out →' : 'Available'}
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   ))}
                 </div>
               )}
 
-              {isExpanded && !hasInventory && (
+              {isExpanded && book.editions?.length > 0 && (!book.copies || book.copies.length === 0) && (
+                <div style={styles.copiesList}>
+                  {book.editions.map((edition) => (
+                    <div key={edition.id} style={styles.editionHeader}>
+                      <span style={styles.editionLabel}>{formatEdition(edition.published_year)}</span>
+                      <span style={styles.editionCount}>No copies yet</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {isExpanded && (!book.editions?.length) && (
                 <p style={{ ...styles.hint, padding: '10px 16px' }}>
-                  No editions or physical copies registered.
+                  No physical copies registered.
                 </p>
               )}
             </div>
@@ -222,21 +181,12 @@ export default function BookList({ librarian }) {
         })}
       </div>
 
-      {returnModal && (
+      {modal && (
         <BorrowerModal
-          physicalBookId={returnModal.physicalBookId}
-          barcode={returnModal.barcode}
-          onClose={() => setReturnModal(null)}
+          physicalBookId={modal.physicalBookId}
+          barcode={modal.barcode}
+          onClose={() => setModal(null)}
           onReturned={loadBooks}
-        />
-      )}
-
-      {checkoutModal && librarian && (
-        <CheckoutModal
-          librarian={librarian}
-          copy={checkoutModal}
-          onClose={() => setCheckoutModal(null)}
-          onSuccess={loadBooks}
         />
       )}
     </div>
@@ -353,20 +303,14 @@ const styles = {
     borderTop: '1px solid #f0ede8',
     padding: '8px 0',
   },
-  editionBlock: {
-    margin: '0 12px 10px',
-    border: '1px solid #e4e2db',
-    borderRadius: 8,
-    overflow: 'hidden',
-    background: '#fff',
-  },
   editionHeader: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '10px 14px',
-    background: '#f0f4f8',
-    borderBottom: '1px solid #e4e2db',
+    padding: '8px 16px',
+    background: '#f7f6f2',
+    borderTop: '1px solid #f0ede8',
+    borderBottom: '1px solid #f0ede8',
   },
   editionLabel: {
     fontSize: 12,
