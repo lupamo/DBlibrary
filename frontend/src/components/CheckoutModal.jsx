@@ -12,7 +12,7 @@ export default function CheckoutModal({ librarian, copy, onClose, onSuccess }) {
   const [searching, setSearching] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [newBorrower, setNewBorrower] = useState({
-    name: '', phone: '', username: '', password: '',
+    name: '', phone: '', username: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -33,7 +33,7 @@ export default function CheckoutModal({ librarian, copy, onClose, onSuccess }) {
   }, [borrowerQuery]);
 
   const handleCreateBorrower = async () => {
-    if (!newBorrower.name || !newBorrower.phone || !newBorrower.username || !newBorrower.password) {
+    if (!newBorrower.name || !newBorrower.phone || !newBorrower.username) {
       return setError('All borrower fields are required.');
     }
     setLoading(true);
@@ -142,8 +142,6 @@ export default function CheckoutModal({ librarian, copy, onClose, onSuccess }) {
               onChange={(e) => setNewBorrower((f) => ({ ...f, phone: e.target.value }))} />
             <input style={styles.input} placeholder="Username" value={newBorrower.username}
               onChange={(e) => setNewBorrower((f) => ({ ...f, username: e.target.value }))} />
-            <input style={styles.input} type="password" placeholder="Password" value={newBorrower.password}
-              onChange={(e) => setNewBorrower((f) => ({ ...f, password: e.target.value }))} />
             <div style={styles.createActions}>
               <button style={styles.btnSecondary} onClick={() => setShowCreate(false)} type="button">Cancel</button>
               <button style={styles.btnSecondary} onClick={handleCreateBorrower} disabled={loading} type="button">
