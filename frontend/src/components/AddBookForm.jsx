@@ -7,8 +7,8 @@ function formatEdition(year, editionId, editions = []) {
   return duplicates ? `${label} #${editionId}` : label;
 }
 
-// ─── Tag Input ────────────────────────────────────────────────────────────────
-function TagInput({ label, tags, onChange, placeholder }) {
+// ─── Tag Input 
+function TagInput({ label, tags, onChange, placeholder, error }) {
   const [input, setInput] = useState('');
   const ref = useRef();
 
@@ -23,7 +23,10 @@ function TagInput({ label, tags, onChange, placeholder }) {
   return (
     <div style={s.field}>
       <label style={s.label}>{label}</label>
-      <div style={s.tagBox} onClick={() => ref.current.focus()}>
+      <div
+        style={error ? { ...s.tagBox, ...s.inputError } : s.tagBox} 
+        onClick={() => ref.current.focus()}
+      >
         {tags.map((t) => (
           <span key={t} style={s.tag}>
             {t}
@@ -44,6 +47,7 @@ function TagInput({ label, tags, onChange, placeholder }) {
           }}
         />
       </div>
+      {error && <p style={s.fieldErrors}>{error}</p>}
     </div>
   );
 }
@@ -133,12 +137,22 @@ function NewBookStep({ initialTitle, onCreated, onBack }) {
   const [genres, setGenres] = useState([]);
   const [editionYear, setEditionYear] = useState('');
   const [loading, setLoading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState('');
 
+  const validate = () => {
+    const errors = {};
+    if (!title.trim()) errors.title = 'Title is required.';
+    if (!authors.length) errors.authors = 'Add at least one author.';
+    if (!genres.length) errors.genres = 'Add at least one genre.';
+    return errors;
+  }
+
   const handleNext = async () => {
-    if (!title.trim()) return setError('Title is required.');
-    if (!authors.length) return setError('Add at least one author.');
-    if (!genres.length) return setError('Add at least one genre.');
+    const errors = validate();
+    setFieldErrors(errors);
+    if (Object.keys(errors).length) return;
+
     setError('');
     setLoading(true);
     try {
@@ -166,11 +180,31 @@ function NewBookStep({ initialTitle, onCreated, onBack }) {
 
       <div style={s.field}>
         <label style={s.label}>Title</label>
-        <input style={s.input} value={title} onChange={(e) => setTitle(e.target.value)} />
+        <input 
+          style={fieldErrors.title ? { ...s.input, ...s.inputError } : s.input}
+          value={title}
+          onChange={(e) => {
+            setTitle(e.target.value);
+            if (fieldErrors.title) setFieldErrors((f) => ({ ...f, title: undefined }));
+          }}
+      />
+        {fieldErrors.title && <p style={s.error}>{fieldErrors.title}</p>}
       </div>
 
-      <TagInput label="Authors" tags={authors} onChange={setAuthors} placeholder="e.g. Stephen King — press Enter" />
-      <TagInput label="Genres" tags={genres} onChange={setGenres} placeholder="e.g. Horror — press Enter" />
+      <TagInput label="Authors" tags={authors} onChange={(val) => {
+        setAuthors(val);
+        if (fieldErrors.authors) setFieldErrors((f) => ({ ...f, authors: undefined }));
+      }} 
+        placeholder="e.g. Stephen King — press Enter" 
+        error={fieldErrors.authors}
+      />
+      <TagInput label="Genres" tags={genres} onChange={(val) => {
+        setGenres(val);
+        if (fieldErrors.genres) setFieldErrors((f) => ({ ...f, genres: undefined }));
+      }}
+       placeholder="e.g. Horror — press Enter" 
+       error={fieldErrors.genres}
+      />
 
       <div style={s.section}>
         <h3 style={s.sectionTitle}>Edition</h3>
@@ -200,7 +234,7 @@ function NewBookStep({ initialTitle, onCreated, onBack }) {
   );
 }
 
-// ─── Step: Pick Edition ────────────────────────────────────────────────────────
+// ─── Step: Pick Edition
 function PickEditionStep({ book, onPickEdition, onNewEdition, onBack }) {
   const [editions, setEditions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -383,7 +417,7 @@ function AddCopiesStep({ book, edition, onDone, onBack }) {
   );
 }
 
-// ─── Root Component ───────────────────────────────────────────────────────────
+// ─── Root Component 
 export default function AddBookFlow() {
   const [step, setStep] = useState('search');
   const [selectedBook, setSelectedBook] = useState(null);
@@ -449,7 +483,7 @@ export default function AddBookFlow() {
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
+// ─── Styles
 const s = {
   page: {
     fontFamily: "'Inter', system-ui, sans-serif",
@@ -478,6 +512,14 @@ const s = {
     fontWeight: 500,
     color: '#1a1917',
     margin: '0 0 4px',
+  },
+  inputError: {
+    borderColor: '#e53e3e',
+  },
+  fieldErrors:{
+    color: '#e53e3e',
+    fontSize: 12,
+    marginTop: 4,
   },
   stepHint: {
     fontSize: 13,
