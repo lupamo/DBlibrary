@@ -28,7 +28,8 @@ export default function BookList() {
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState(null);
-  const [modal, setModal] = useState(null); 
+  const [modal, setModal] = useState(null);
+  const [editBook, setEditBook] = useState(null);
 
   const loadBooks = useCallback(async () => {
     setLoading(true);

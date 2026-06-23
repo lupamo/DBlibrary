@@ -48,14 +48,26 @@ function TagInput({ label, tags, onChange, placeholder }) {
   );
 }
 
-// ─── Step: Search ─────────────────────────────────────────────────────────────
+// ─── Step: Search
 function SearchStep({ onSelect, onCreate }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
+  const prevQueryRef = useRef('');
 
   useEffect(() => {
-    if (!query.trim()) { setResults([]); return; }
+    const prevQuery = prevQueryRef.current;
+    prevQueryRef.current = query;
+
+    const isDeletion = query.length < prevQuery.length;
+    
+    setResults([]);
+    setLoading(false);
+
+    if (!query.trim() || isDeletion) {
+      return; 
+    }
+
     setLoading(true);
     const timer = setTimeout(() => {
       api.searchBooks(query)
@@ -114,7 +126,7 @@ function SearchStep({ onSelect, onCreate }) {
   );
 }
 
-// ─── Step: New Book Details ────────────────────────────────────────────────────
+// ─── Step: New Book Details
 function NewBookStep({ initialTitle, onCreated, onBack }) {
   const [title, setTitle] = useState(initialTitle);
   const [authors, setAuthors] = useState([]);
@@ -286,7 +298,7 @@ function PickEditionStep({ book, onPickEdition, onNewEdition, onBack }) {
   );
 }
 
-// ─── Step: Add Copies ─────────────────────────────────────────────────────────
+// ─── Step: Add Copies
 function AddCopiesStep({ book, edition, onDone, onBack }) {
   const [copies, setCopies] = useState([{ barcode: '', condition: 'New' }]);
   const [loading, setLoading] = useState(false);
