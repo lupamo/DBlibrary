@@ -1,5 +1,5 @@
 import express from 'express';
-import { getAllBooksWithCopies, getBookById, addCompleteBook, searchBook, getBookEditions, addEdition } from '../queries/books.js';
+import { getAllBooksWithCopies, getBookById, addCompleteBook, searchBook, getBookEditions, addEdition, updateCompleteBook, deleteBook } from '../queries/books.js';
 
 const router = express.Router();
 
@@ -52,6 +52,24 @@ router.get('/:id', (req, res) => {
 		res.status(404).json({ error: 'Book not found' });
 	}
 })
+
+router.put('/:id', (req, res) => {
+	try {
+		const book = updateCompleteBook(Number(req.params.id), req.body);
+		res.json(book);
+	} catch (err) {
+		res.status(400).json({ error: err.message });
+	}
+});
+
+router.delete('/:id', (req, res) => {
+	try {
+		const result = deleteBook(Number(req.params.id));
+		res.json(result);
+	} catch (err) {
+		res.status(400).json({ error: err.message });
+	}
+});
 
 router.post('/', (req, res) => {
 	try {
