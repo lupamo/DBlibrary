@@ -119,7 +119,7 @@ export default function CheckoutsPage({ librarian }) {
 
   const handleCheckout = async () => {
     const errs = {};
-    if (!scannedCopy) errs.barcode = 'Look up a valid barcode first.';
+    if (!scannedCopy) errs.barcode = 'Enter a valid barcode first.';
     if (!selectedBorrower) errs.borrower = 'Select or create a borrower.';
     setFieldErrors(errs);
     if (Object.keys(errs).length) return;

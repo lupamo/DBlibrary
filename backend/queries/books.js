@@ -194,11 +194,81 @@ const getBookById = (id) => {
 const getBookByTitle = (title) => {
 	return db.prepare('SELECT * FROM books where title =?').get(title);
 }
-const updateBook = (id, title) => {
-	return db.prepare(
-		`UPDATE books SET title = ? WHERE id = ? RETURNING *`
-	).get(title, id)
-}
+
+const updateCompleteBook = db.transaction((id, { title, authors, genres}) => {
+	const book = getBookById(id);
+	if (!book) {
+		throw new Error('Book not found');
+	}
+	db.prepare(`UPDATE books SET title = ? WHERE id = ?`).run(title, id);
+
+	//resync authors
+	db.prepare(`DELETE FROM author_book WHERE book_id = ?`).run(id);
+	const getAuthor = db.prepare(`SELECT id FROM authors WHERE name = ?`);
+	const addAuthor = db.prepare(`INSERT INTO authors (name) VALUES (?) RETURNING id`);
+	const linkAuthor = db.prepare(`INSERT INTO author_book (author_id, book_id) VALUES (?, ?)`);
+	for (const name of authors) {
+		const existing = getAuthor.get(name);
+		const authorId = existing ? existing.id : addAuthor.get(name).id;
+		linkAuthor.run(authorId, id);
+	}
+
+	//resync genres
+	db.prepare(`DELETE FROM book_genre WHERE book_id = ?`).run(id);
+	const getGenre = db.prepare(`SELECT id FROM genres WHERE name = ?`);
+	const addGenre = db.prepare(`INSERT INTO genres (name) VALUES (?) RETURNING id`);
+	const linkGenre = db.prepare(`INSERT INTO book_genre (book_id, genre_id) VALUES (?, ?)`);
+	for (const name of genres) {
+		const existing = getGenre.get(name);
+		const genreId = existing ? existing.id : addGenre.get(name).id;
+		linkGenre.run(id, genreId);
+	}
+	return getBookById(id);
+})
+
+const deleteBook = db.transaction((id) => {
+	const book = getBookById(id);
+
+	if (!book) {
+		throw new Error('Book not found');
+	}
+
+	const activeCheckout = db.prepare(`
+		SELECT 1
+		FROM physical_books pb
+		JOIN book_editions be ON pb.book_edition_id = be.id
+		JOIN checkout_entries ce ON ce.physical_book_id = pb.id
+		JOIN checkouts c ON ce.checkout_id = c.id
+		WHERE be.book_id = ? AND c.returned_at IS NULL
+		LIMIT 1
+	`).get(id);
+	
+	if (activeCheckout) {
+		throw new Error('Cannot delete book with active checkouts');
+	}
+	//cascade delete:
+	db.prepare(`
+		DELETE FROM checkout_entries
+		WHERE physical_book_id IN (
+			SELECT pb.id FROM physical_books pb
+			JOIN book_editions be ON pb.book_edition_id = be.id
+			WHERE be.book_id = ?
+		)
+	`).run(id);
+
+	db.prepare(`
+		DELETE FROM physical_books
+		WHERE book_edition_id IN (
+			SELECT id FROM book_editions WHERE book_id = ?
+		)
+	`).run(id);
+	db.prepare(`DELETE FROM book_editions WHERE book_id = ?`).run(id);
+	db.prepare(`DELETE FROM author_book WHERE book_id = ?`).run(id);
+	db.prepare(`DELETE FROM book_genre WHERE book_id = ?`).run(id);
+	db.prepare(`DELETE FROM books WHERE id = ?`).run(id);
+	return { success: true, message: 'Book deleted successfully' };
+})
+
 const getBookEditions = (bookId) => {
 	return db.prepare(`
 			SELECT
