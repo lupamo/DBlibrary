@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../api/client';
+import editIcon from '../assets/edit.svg';
+import deleteIcon from '../assets/delete.svg';
 import BorrowerModal from './BorrowerModal';
+import EditBookModal from './EditBookModal';
+import DeleteBookModal from './DeleteBookModal';
 
 function formatEdition(year) {
   return year ? `${year} edition` : 'Edition (no year)';
@@ -29,7 +33,11 @@ export default function BookList() {
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState(null);
   const [modal, setModal] = useState(null);
+
   const [editBook, setEditBook] = useState(null);
+  const [deleteBook, setDeleteBook] = useState(null);
+  const [actionError, setActionError] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
 
   const loadBooks = useCallback(async () => {
     setLoading(true);
@@ -54,6 +62,37 @@ export default function BookList() {
       (b.authors && b.authors.toLowerCase().includes(q))
     );
   });
+
+  const handleSaveEdit = async ({ title, authors, genres }) => {
+    setActionLoading(true);
+    setActionError('');
+
+    try {
+      await api.updateBook(editBook.id, { title, authors, genres });
+      setEditBook(null);
+      await loadBooks();
+    } catch (err) {
+      setActionError(err.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    setActionLoading(true);
+    setActionError('');
+
+    try {
+      await api.deleteBook(deleteBook.id);
+      setDeleteBook(null);
+      await loadBooks();
+    } catch (err) {
+      setActionError(err.message);
+    } finally {
+      setActionLoading(false)
+    }
+
+  }
 
   if (loading) return <p style={styles.hint}>Loading books…</p>;
   if (error) return <p style={styles.error}>{error}</p>;
@@ -117,6 +156,22 @@ export default function BookList() {
                   }}>
                     {available}/{book.total_copies || 0} available
                   </span>
+                  <button
+                    style={styles.iconBtn}
+                    onClick={(e) => { e.stopPropagation(); setEditBook(book); }}
+                    type="button"
+                    title="Edit book"
+                  >
+                    <img src={editIcon} alt="Edit" style={{ width: '12px', height: '12px' }}/>
+                  </button>
+                  <button
+                    style={styles.iconBtn}
+                    onClick={(e) => { e.stopPropagation(); setDeleteBook(book); }}
+                    type="button"
+                    title="Delete book"
+                  >
+                    <img src={deleteIcon} alt="Delete" style={{ width: '12px', height: '12px' }}/>
+                  </button>
                   <span style={styles.chevron}>{isExpanded ? '▲' : '▼'}</span>
                 </div>
               </div>
@@ -188,6 +243,24 @@ export default function BookList() {
           barcode={modal.barcode}
           onClose={() => setModal(null)}
           onReturned={loadBooks}
+        />
+      )}
+      {editBook && (
+        <EditBookModal
+          book={editBook}
+          loading={actionLoading}
+          error={actionError}
+          onSave={handleSaveEdit}
+          onClose={() => { setEditBook(null); setActionError(''); }}
+        />
+      )}
+      {deleteBook && (
+        <DeleteBookModal
+          book={deleteBook}
+          loading={actionLoading}
+          error={actionError}
+          onConfirm={handleConfirmDelete}
+          onClose={() => { setDeleteBook(null); setActionError(''); }}
         />
       )}
     </div>

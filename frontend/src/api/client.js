@@ -61,7 +61,13 @@ export const api = {
 		request(`/book-editions/${editionId}/copies`, {
 			method: 'POST',
 			body: JSON.stringify({ copies }),
-		}),
-
+	}),
+	updateBook: (id, data) => request(`/books/${id}`, {
+		method: 'PUT',
+		body: JSON.stringify(data),
+	}),
+	deleteBook: (id) => request(`/books/${id}`, {
+		method: 'DELETE',
+	})
 }
 
