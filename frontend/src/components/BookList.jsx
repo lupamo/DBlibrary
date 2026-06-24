@@ -5,6 +5,7 @@ import deleteIcon from '../assets/delete.svg';
 import BorrowerModal from './BorrowerModal';
 import EditBookModal from './EditBookModal';
 import DeleteBookModal from './DeleteBookModal';
+import Collapsible from './Collapsible';
 
 function formatEdition(year) {
   return year ? `${year} edition` : 'Edition (no year)';
@@ -177,61 +178,68 @@ export default function BookList() {
               </div>
 
               {/* Expanded physical copies */}
-              {isExpanded && book.copies && book.copies.length > 0 && (
-                <div style={styles.copiesList}>
-                  {groupCopiesByEdition(book.copies).map((group) => (
-                    <div key={group.edition_id}>
-                      <div style={styles.editionHeader}>
-                        <span style={styles.editionLabel}>{formatEdition(group.published_year)}</span>
-                        <span style={styles.editionCount}>
-                          {group.copies.length} {group.copies.length === 1 ? 'copy' : 'copies'}
-                        </span>
-                      </div>
-                      <div style={styles.copyTableHead}>
-                        <span>Barcode</span>
-                        <span>Condition</span>
-                        <span>Status</span>
-                      </div>
-                      {group.copies.map((copy) => (
-                        <div
-                          key={copy.id}
-                          style={styles.copyRow}
-                          onClick={() => copy.is_checked_out && setModal({
-                            physicalBookId: copy.id,
-                            barcode: copy.barcode,
-                          })}
-                        >
-                          <span style={styles.barcode}>{copy.barcode}</span>
-                          <span style={styles.condition}>{copy.condition}</span>
-                          <span style={{
-                            ...styles.copyBadge,
-                            ...(copy.is_checked_out ? styles.copyOut : styles.copyIn),
-                          }}>
-                            {copy.is_checked_out ? 'Checked out →' : 'Available'}
+              <Collapsible open={isExpanded}>
+                {book.copies && book.copies.length > 0 && (
+                  <div style={styles.copiesList}>
+                    {groupCopiesByEdition(book.copies).map((group) => (
+                      <div key={group.edition_id}>
+                        <div style={styles.editionHeader}>
+                          <span style={styles.editionLabel}>{formatEdition(group.published_year)}</span>
+                          <span style={styles.editionCount}>
+                            {group.copies.length} {group.copies.length === 1 ? 'copy' : 'copies'}
                           </span>
                         </div>
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              )}
+                        <div style={styles.copyTableHead}>
+                          <span>Barcode</span>
+                          <span>Condition</span>
+                          <span>Status</span>
+                        </div>
+                        {group.copies.map((copy) => (
+                          <div
+                            key={copy.id}
+                            style={styles.copyRow}
+                            onClick={() => copy.is_checked_out && setModal({
+                              physicalBookId: copy.id,
+                              barcode: copy.barcode,
+                            })}
+                          >
+                            <span style={styles.barcode}>{copy.barcode}</span>
+                            <span style={styles.condition}>{copy.condition}</span>
+                            <span style={{
+                              ...styles.copyBadge,
+                              ...(copy.is_checked_out ? styles.copyOut : styles.copyIn),
+                            }}>
+                              {copy.is_checked_out ? 'Checked out →' : 'Available'}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                )}  
+              </Collapsible>
+              
 
-              {isExpanded && book.editions?.length > 0 && (!book.copies || book.copies.length === 0) && (
-                <div style={styles.copiesList}>
-                  {book.editions.map((edition) => (
-                    <div key={edition.id} style={styles.editionHeader}>
-                      <span style={styles.editionLabel}>{formatEdition(edition.published_year)}</span>
-                      <span style={styles.editionCount}>No copies yet</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {isExpanded && (!book.editions?.length) && (
-                <p style={{ ...styles.hint, padding: '10px 16px' }}>
-                  No physical copies registered.
-                </p>
-              )}
+              <Collapsible open={isExpanded}>
+                {book.editions?.length > 0 && (!book.copies || book.copies.length === 0) && (
+                  <div style={styles.copiesList}>
+                    {book.editions.map((edition) => (
+                      <div key={edition.id} style={styles.editionHeader}>
+                        <span style={styles.editionLabel}>{formatEdition(edition.published_year)}</span>
+                        <span style={styles.editionCount}>No copies yet</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Collapsible>
+              
+               <Collapsible open={isExpanded}>
+                {(!book.editions?.length) && (
+                  <p style={{ ...styles.hint, padding: '10px 16px' }}>
+                    No physical copies registered.
+                  </p>
+                )}
+               </Collapsible>
             </div>
           );
         })}
