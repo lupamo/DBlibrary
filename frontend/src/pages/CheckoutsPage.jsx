@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '../api/client';
 import BorrowerModal from '../components/BorrowerModal';
 
@@ -28,14 +28,17 @@ export default function CheckoutsPage({ librarian }) {
   const [searching, setSearching] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [newBorrower, setNewBorrower] = useState({
-    name: '', phone: '', username: '', password: '',
+    name: '', phone: '', username: ''
   });
 
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState('');
   const [checkoutSuccess, setCheckoutSuccess] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const [returnModal, setReturnModal] = useState(null);
+
+  const barcodeInputRef = useRef(null);
 
   const loadLoans = useCallback(async () => {
     setLoading(true);
@@ -69,6 +72,10 @@ export default function CheckoutsPage({ librarian }) {
     return () => clearTimeout(timer);
   }, [borrowerQuery]);
 
+  useEffect(() => {
+    barcodeInputRef.current?.focus();
+  }, []);
+
   const handleLookup = async () => {
     const code = barcode.trim();
     if (!code) return;
@@ -82,6 +89,7 @@ export default function CheckoutsPage({ librarian }) {
         return;
       }
       setScannedCopy(copy);
+      setFieldErrors((f) => ({ ...f, barcode: undefined }))
     } catch (err) {
       setLookupError(err.message);
     } finally {
@@ -90,7 +98,7 @@ export default function CheckoutsPage({ librarian }) {
   };
 
   const handleCreateBorrower = async () => {
-    if (!newBorrower.name || !newBorrower.phone || !newBorrower.username || !newBorrower.password) {
+    if (!newBorrower.name || !newBorrower.phone || !newBorrower.username) {
       return setCheckoutError('All borrower fields are required.');
     }
     setCheckoutLoading(true);
@@ -101,7 +109,7 @@ export default function CheckoutsPage({ librarian }) {
       setShowCreate(false);
       setBorrowerQuery(created.name);
       setBorrowers([]);
-      setNewBorrower({ name: '', phone: '', username: '', password: '' });
+      setNewBorrower({ name: '', phone: '', username: ''});
     } catch (err) {
       setCheckoutError(err.message);
     } finally {
@@ -110,8 +118,12 @@ export default function CheckoutsPage({ librarian }) {
   };
 
   const handleCheckout = async () => {
-    if (!scannedCopy) return setCheckoutError('Look up a book barcode first.');
-    if (!selectedBorrower) return setCheckoutError('Select or create a borrower.');
+    const errs = {};
+    if (!scannedCopy) errs.barcode = 'Look up a valid barcode first.';
+    if (!selectedBorrower) errs.borrower = 'Select or create a borrower.';
+    setFieldErrors(errs);
+    if (Object.keys(errs).length) return;
+
     setCheckoutLoading(true);
     setCheckoutError('');
     setCheckoutSuccess('');
@@ -127,6 +139,7 @@ export default function CheckoutsPage({ librarian }) {
       setSelectedBorrower(null);
       setBorrowerQuery('');
       loadLoans();
+      barcodeInputRef.current?.focus();
     } catch (err) {
       setCheckoutError(err.message);
     } finally {
@@ -147,7 +160,8 @@ export default function CheckoutsPage({ librarian }) {
             <label style={styles.label}>Barcode</label>
             <div style={styles.row}>
               <input
-                style={styles.input}
+                ref={barcodeInputRef}
+                style={fieldErrors.barcode ? { ...styles.input, ...styles.inputError } : styles.input}
                 value={barcode}
                 onChange={(e) => setBarcode(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleLookup()}
@@ -157,6 +171,7 @@ export default function CheckoutsPage({ librarian }) {
                 {lookingUp ? '…' : 'Look up'}
               </button>
             </div>
+            {fieldErrors.barcode && <p style={styles.fieldError}>{fieldErrors.barcode}</p>}
           </div>
 
           {lookupError && <p style={styles.error}>{lookupError}</p>}
@@ -173,7 +188,7 @@ export default function CheckoutsPage({ librarian }) {
           <div style={styles.field}>
             <label style={styles.label}>Borrower</label>
             <input
-              style={styles.input}
+              style={fieldErrors.borrower ? { ...styles.input, ...styles.inputError } : styles.input}
               value={borrowerQuery}
               onChange={(e) => {
                 setBorrowerQuery(e.target.value);
@@ -181,6 +196,7 @@ export default function CheckoutsPage({ librarian }) {
               }}
               placeholder="Search by name, phone, or username…"
             />
+            {fieldErrors.borrower && <p style={styles.fieldError}>{fieldErrors.borrower}</p>}
           </div>
 
           {searching && <p style={styles.hint}>Searching…</p>}
@@ -195,6 +211,7 @@ export default function CheckoutsPage({ librarian }) {
                     setSelectedBorrower(b);
                     setBorrowerQuery(b.name);
                     setBorrowers([]);
+                    setFieldErrors((f) => ({ ...f, borrower: undefined }))
                   }}
                   type="button"
                 >
@@ -227,8 +244,6 @@ export default function CheckoutsPage({ librarian }) {
                 onChange={(e) => setNewBorrower((f) => ({ ...f, phone: e.target.value }))} />
               <input style={styles.input} placeholder="Username" value={newBorrower.username}
                 onChange={(e) => setNewBorrower((f) => ({ ...f, username: e.target.value }))} />
-              <input style={styles.input} type="password" placeholder="Password" value={newBorrower.password}
-                onChange={(e) => setNewBorrower((f) => ({ ...f, password: e.target.value }))} />
               <div style={styles.createActions}>
                 <button style={styles.btnSecondary} onClick={() => setShowCreate(false)} type="button">Cancel</button>
                 <button style={styles.btnSecondary} onClick={handleCreateBorrower} disabled={checkoutLoading} type="button">
@@ -244,7 +259,7 @@ export default function CheckoutsPage({ librarian }) {
           <button
             style={styles.checkoutBtn}
             onClick={handleCheckout}
-            disabled={checkoutLoading || !scannedCopy || !selectedBorrower}
+            disabled={checkoutLoading}
             type="button"
           >
             {checkoutLoading ? 'Processing…' : 'Check out book'}
@@ -324,6 +339,14 @@ const styles = {
     border: '1px solid #e4e2db',
     borderRadius: 10,
     padding: '1.25rem',
+  },
+  inputError: {
+  borderColor: '#e53e3e',
+  },
+  fieldError: {
+    fontSize: 12,
+    color: '#c0392b',
+    margin: '0 0 8px',
   },
   cardLabel: {
     fontSize: 11,
