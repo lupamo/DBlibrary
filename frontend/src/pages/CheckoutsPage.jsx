@@ -37,7 +37,7 @@ export default function CheckoutsPage({ librarian }) {
   const [fieldErrors, setFieldErrors] = useState({});
 
   const [returnModal, setReturnModal] = useState(null);
-
+  const [justAddedId, setJustAddedId] = useState(null);
   const barcodeInputRef = useRef(null);
 
   const loadLoans = useCallback(async () => {
@@ -134,18 +134,32 @@ export default function CheckoutsPage({ librarian }) {
         physical_book_ids: [scannedCopy.id],
       });
       setCheckoutSuccess(`"${scannedCopy.book_title}" checked out to ${selectedBorrower.name}.`);
+      setJustAddedId(scannedCopy.id);
       setBarcode('');
       setScannedCopy(null);
       setSelectedBorrower(null);
       setBorrowerQuery('');
       loadLoans();
       barcodeInputRef.current?.focus();
+      setTimeout(() => setJustAddedId(null), 1200);
     } catch (err) {
       setCheckoutError(err.message);
     } finally {
       setCheckoutLoading(false);
     }
   };
+
+  useEffect(() => {
+    const styleTag = document.createElement('style');
+    styleTag.textContent = `
+      @keyframes loanRowSlideIn {
+        from { opacity: 0; transform: translateY(-8px); background-color: #eef3ee; }
+        to { opacity: 1; transform: translateY(0); background-color: #fff; }
+      }
+    `;
+    document.head.appendChild(styleTag);
+    return () => document.head.removeChild(styleTag);
+  }, []);
 
   return (
     <div>
@@ -244,7 +258,9 @@ export default function CheckoutsPage({ librarian }) {
                 onChange={(e) => setNewBorrower((f) => ({ ...f, phone: e.target.value }))} />
               <input style={styles.input} placeholder="Username" value={newBorrower.username}
                 onChange={(e) => setNewBorrower((f) => ({ ...f, username: e.target.value }))} />
-              <div style={styles.createActions}>
+              <input style={styles.input} type="password" placeholder="Password" value={newBorrower.password}
+                onChange={(e) => setNewBorrower((f) => ({ ...f, password: e.target.value }))} />
+              <div style={styles.createActions}>              
                 <button style={styles.btnSecondary} onClick={() => setShowCreate(false)} type="button">Cancel</button>
                 <button style={styles.btnSecondary} onClick={handleCreateBorrower} disabled={checkoutLoading} type="button">
                   Create & select
@@ -279,30 +295,39 @@ export default function CheckoutsPage({ librarian }) {
 
           {!loading && loans.length > 0 && (
             <div style={styles.loansList}>
-              {loans.map((loan) => (
-                <div key={loan.physical_book_id} style={styles.loanRow}>
-                  <div style={styles.loanInfo}>
-                    <p style={styles.loanTitle}>{loan.book_title}</p>
-                    <p style={styles.loanMeta}>
-                      {formatEdition(loan.published_year)} · {loan.barcode}
-                    </p>
-                    <p style={styles.loanBorrower}>
-                      {loan.borrower_name} · {loan.borrower_phone}
-                    </p>
-                    <p style={styles.loanDate}>Checked out {formatDate(loan.checked_out_at)}</p>
-                  </div>
-                  <button
-                    style={styles.checkinBtn}
-                    onClick={() => setReturnModal({
-                      physicalBookId: loan.physical_book_id,
-                      barcode: loan.barcode,
-                    })}
-                    type="button"
+              {loans.map((loan) => {
+                const isNew = loan.physical_book_id === justAddedId;
+                return (
+                  <div
+                    key={loan.physical_book_id}
+                    style={{
+                      ...styles.loanRow,
+                      ...(isNew ? styles.loanRowNew : {}),
+                    }}
                   >
-                    Check in
-                  </button>
-                </div>
-              ))}
+                    <div style={styles.loanInfo}>
+                      <p style={styles.loanTitle}>{loan.book_title}</p>
+                      <p style={styles.loanMeta}>
+                        {formatEdition(loan.published_year)} · {loan.barcode}
+                      </p>
+                      <p style={styles.loanBorrower}>
+                        {loan.borrower_name} · {loan.borrower_phone}
+                      </p>
+                      <p style={styles.loanDate}>Checked out {formatDate(loan.checked_out_at)}</p>
+                    </div>
+                    <button
+                      style={styles.checkinBtn}
+                      onClick={() => setReturnModal({
+                        physicalBookId: loan.physical_book_id,
+                        barcode: loan.barcode,
+                      })}
+                      type="button"
+                    >
+                      Check in
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -342,6 +367,9 @@ const styles = {
   },
   inputError: {
   borderColor: '#e53e3e',
+  },
+  loanRowNew: {
+    animation: 'loanRowSlideIn 1s ease',
   },
   fieldError: {
     fontSize: 12,

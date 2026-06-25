@@ -166,7 +166,7 @@ export default function BookList() {
                     <img src={editIcon} alt="Edit" style={{ width: '12px', height: '12px' }}/>
                   </button>
                   <button
-                    style={styles.iconBtn}
+                    style={styles.deleteIconBtn}
                     onClick={(e) => { e.stopPropagation(); setDeleteBook(book); }}
                     type="button"
                     title="Delete book"
