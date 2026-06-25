@@ -57,7 +57,9 @@ function SearchStep({ onSelect, onCreate }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const prevQueryRef = useRef('');
+  const resultRefs = useRef([]);
 
   useEffect(() => {
     const prevQuery = prevQueryRef.current;
@@ -67,6 +69,7 @@ function SearchStep({ onSelect, onCreate }) {
     
     setResults([]);
     setLoading(false);
+    setHighlightedIndex(-1);
 
     if (!query.trim() || isDeletion) {
       return; 
@@ -75,12 +78,42 @@ function SearchStep({ onSelect, onCreate }) {
     setLoading(true);
     const timer = setTimeout(() => {
       api.searchBooks(query)
-        .then(setResults)
+        .then((data) => {
+          setResults(data);
+          setHighlightedIndex(data.length > 0 ? 0 : -1);
+        })
         .catch(() => setResults([]))
-        .finally(() => setLoading(false));
+        .finally(() => setLoading(false))
+        ;
     }, 300);
     return () => clearTimeout(timer);
   }, [query]);
+  
+  useEffect(() => {
+    resultRefs.current[highlightedIndex]?.scrollIntoView({ block: 'nearest' });
+  }, [highlightedIndex]);
+
+  const totalRows = results.length +1;
+
+  const handleKeyDown = (e) => {
+    if (!query.trim()) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setHighlightedIndex((prev) => (prev + 1) % totalRows);
+    } else if (e.key === 'ArrowUp') {
+      setHighlightedIndex((prev) => (prev - 1 + totalRows) % totalRows);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (highlightedIndex < results.length && highlightedIndex >= 0) {
+        onSelect(results[highlightedIndex]);
+      } else {
+        onCreate(query.trim());
+      }
+    } else if (e.key === 'Escape') {
+      setHighlightedIndex(-1);
+    }
+  }
 
   return (
     <div>
@@ -94,6 +127,7 @@ function SearchStep({ onSelect, onCreate }) {
           autoFocus
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={handleKeyDown}
           placeholder="e.g. The Talisman"
         />
       </div>
@@ -102,11 +136,13 @@ function SearchStep({ onSelect, onCreate }) {
 
       {!loading && query.trim() && (
         <div style={s.resultsList}>
-          {results.map((book) => (
+          {results.map((book, i) => (
             <button
               key={book.id}
-              style={s.resultRow}
+              ref={(el) => (resultRefs.current[i] = el)}
+              style={i === highlightedIndex ? { ...s.resultRow, ...s.resultRowHighlighted } : s.resultRow}
               onClick={() => onSelect(book)}
+              onMouseEnter={() => setHighlightedIndex(i)}
               type="button"
             >
               <div>
@@ -118,7 +154,8 @@ function SearchStep({ onSelect, onCreate }) {
           ))}
 
           <button
-            style={s.createRow}
+            ref={(el) => (resultRefs.current[results.length] = el)}
+            style={highlightedIndex === results.length ? { ...s.createRow, ...s.createRowHighlighted } : s.createRow}
             onClick={() => onCreate(query.trim())}
             type="button"
           >
@@ -553,6 +590,13 @@ const s = {
     marginBottom: '1rem',
     fontFamily: 'inherit',
   },
+  resultRowHighlighted: {
+  background: '#f0f4f8',
+  },
+  createRowHighlighted: {
+    background: '#e4e2db',
+  },
+
   field: { marginBottom: '1rem' },
   label: {
     display: 'block',
