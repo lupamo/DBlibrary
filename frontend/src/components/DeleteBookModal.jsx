@@ -33,6 +33,14 @@ iconBtn: {
   fontSize: 13,
   color: '#6b6860',
 },
+hint: {
+  fontFamily: "'Lora', Georgia, serif",
+  fontSize: 14,
+  fontWeight: 500,
+  color: '#1a1917',
+  margin: 0,
+  marginBottom: 3,
+},
 revalidating: {
   fontSize: 13,
   color: '#a09d97',
@@ -73,7 +81,7 @@ modalActions: {
 btnDanger: {
   height: 36,
   padding: '0 14px',
-  background: '#c0392b',
+  backgroundColor: '#c0392b',
   color: '#fff',
   border: 'none',
   borderRadius: 7,
