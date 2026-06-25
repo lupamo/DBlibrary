@@ -21,10 +21,10 @@ function EditBookModal({ book, loading, error, onSave, onClose }) {
         <label style={styles.label}>Title</label>
         <input style={styles.input} value={title} onChange={(e) => setTitle(e.target.value)} />
 
-        <label style={styles.label}>Authors (comma-separated)</label>
+        <label style={styles.label}>Authors (comma separated)</label>
         <input style={styles.input} value={authorsText} onChange={(e) => setAuthorsText(e.target.value)} />
 
-        <label style={styles.label}>Genres (comma-separated)</label>
+        <label style={styles.label}>Genres (comma separated)</label>
         <input style={styles.input} value={genresText} onChange={(e) => setGenresText(e.target.value)} />
 
         {error && <p style={styles.error}>{error}</p>}
@@ -65,6 +65,14 @@ overlay: {
   justifyContent: 'center',
   zIndex: 100,
   padding: '1rem',
+},
+label: {
+  fontFamily: "'Lora', Georgia, serif",
+  fontSize: 14,
+  fontWeight: 500,
+  color: '#1a1917',
+  margin: 0,
+  marginBottom: 3,
 },
 modal: {
   background: '#fff',
